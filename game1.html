@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="windows-1251">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Игра</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #222;
+    overflow: hidden;
+    touch-action: none;
+    font-family: Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  canvas {
+    display: block;
+    background: #87CEEB;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+  @media (min-width: 768px) {
+    canvas { width: 100vw; height: 100vh; }
+  }
+  @media (max-width: 767px) {
+    canvas { width: 100vw; height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const W = () => canvas.width;
+const H = () => canvas.height;
+
+const SKINS = [
+  { id: 'frog', name: 'Лягушка', price: 0, color: '#4CAF50', dark: '#2E7D32', type: 'frog' },
+  { id: 'bird', name: 'Птичка', price: 3, color: '#FFC107', dark: '#FF9800', type: 'bird' },
+  { id: 'eagle', name: 'Орел', price: 8, color: '#8D6E63', dark: '#5D4037', type: 'eagle' },
+  { id: 'woodpecker', name: 'Дятел', price: 6, color: '#F44336', dark: '#B71C1C', type: 'woodpecker' },
+  { id: 'mouse', name: 'Мышка', price: 5, color: '#9E9E9E', dark: '#616161', type: 'mouse' },
+  { id: 'hedgehog', name: 'Ежик', price: 7, color: '#795548', dark: '#4E342E', type: 'hedgehog' },
+  { id: 'squirrel', name: 'Белка', price: 10, color: '#FF7043', dark: '#D84315', type: 'squirrel' },
+  { id: 'bat', name: 'Мышь летучая', price: 15, color: '#424242', dark: '#212121', type: 'bat' }
+];
+
+let coins = parseInt(localStorage.getItem('frog_coins') || '0');
+let maxScore = parseInt(localStorage.getItem('frog_maxScore') || '0');
+let ownedSkins = JSON.parse(localStorage.getItem('frog_owned') || '["frog"]');
+let currentSkin = localStorage.getItem('frog_current') || 'frog';
+
+function save() {
+  localStorage.setItem('frog_coins', coins);
+  localStorage.setItem('frog_maxScore', maxScore);
+  localStorage.setItem('frog_owned', JSON.stringify(ownedSkins));
+  localStorage.setItem('frog_current', currentSkin);
+}
+
+let frog = { x: 0, y: 0, w: 0, h: 0, vy: 0, gravity: 0, jump: 0 };
+let pipes = [];
+let score = 0;
+let gameOver = false;
+let started = false;
+let screen = 'menu';
+let animTimer = 0;
+let wingFrame = 0;
+
+function initSizes() {
+  const scale = Math.min(W() / 400, H() / 600);
+  frog.w = 40 * scale;
+  frog.h = 40 * scale;
+  frog.x = 80 * scale;
+  frog.y = H() / 2 - frog.h / 2;
+  frog.gravity = 0.45 * scale;
+  frog.jump = -8 * scale;
+}
+
+const GROUND = () => H() * 0.13;
+
+function reset() {
+  initSizes();
+  frog.vy = 0;
+  pipes = [];
+  score = 0;
+  gameOver = false;
+  started = false;
+}
+
+function spawnPipe() {
+  const scale = Math.min(W() / 400, H() / 600);
+  const gap = 160 * scale;
+  const minTop = 60 * scale;
+  const maxTop = H() - GROUND() - gap - 60 * scale;
+  const top = Math.random() * (maxTop - minTop) + minTop;
+  pipes.push({ x: W(), top: top, gap: gap, w: 60 * scale, passed: false });
+}
+
+let pipeTimer = 0;
+
+function drawAnimal(skin, cx, cy, scale, frame) {
+  const c = skin.color;
+  const d = skin.dark;
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  const legOffset = frame === 0 ? -8 : 8;
+
+  ctx.fillStyle = c;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 22 * scale, 18 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = d;
+  ctx.beginPath();
+  ctx.ellipse(-14 * scale, (14 + legOffset) * scale, 7 * scale, 4 * scale, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(14 * scale, (14 - legOffset) * scale, 7 * scale, 4 * scale, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-8 * scale, -10 * scale, 6 * scale, 0, Math.PI * 2);
+  ctx.arc(8 * scale, -10 * scale, 6 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(-8 * scale, -10 * scale, 3 * scale, 0, Math.PI * 2);
+  ctx.arc(8 * scale, -10 * scale, 3 * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (skin.type === 'frog') {
+    ctx.strokeStyle = d;
+    ctx.lineWidth = 2 * scale;
+    ctx.beginPath();
+    ctx.arc(0, 3 * scale, 9 * scale, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  } else if (skin.type === 'bird' || skin.type === 'eagle' || skin.type === 'woodpecker') {
+    ctx.fillStyle = '#FF6F00';
+    ctx.beginPath();
+    ctx.moveTo(0, 2 * scale);
+    ctx.lineTo(10 * scale, 6 * scale);
+    ctx.lineTo(0, 10 * scale);
+    ctx.closePath();
+    ctx.fill();
+    const wingUp = frame === 0 ? -6 : 6;
+    ctx.fillStyle = d;
+    ctx.beginPath();
+    ctx.ellipse(-20 * scale, (0 + wingUp) * scale, 10 * scale, 5 * scale, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(20 * scale, (0 - wingUp) * scale, 10 * scale, 5 * scale, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    if (skin.type === 'woodpecker') {
+      ctx.fillStyle = '#D32F2F';
+      ctx.beginPath();
+      ctx.arc(0, -16 * scale, 7 * scale, Math.PI, 0);
+      ctx.fill();
+    }
+    if (skin.type === 'eagle') {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(0, -12 * scale, 10 * scale, Math.PI, 0);
+      ctx.fill();
+    }
+  } else if (skin.type === 'mouse') {
+    ctx.fillStyle = d;
+    ctx.beginPath();
+    ctx.arc(-12 * scale, -16 * scale, 7 * scale, 0, Math.PI * 2);
+    ctx.arc(12 * scale, -16 * scale, 7 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = d;
+    ctx.lineWidth = 2 * scale;
+    ctx.beginPath();
+    ctx.moveTo(18 * scale, 4 * scale);
+    ctx.quadraticCurveTo((28 + legOffset) * scale, 8 * scale, 26 * scale, 16 * scale);
+    ctx.stroke();
+  } else if (skin.type === 'hedgehog') {
+    ctx.fillStyle = d;
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 6 * scale, -14 * scale);
+      ctx.lineTo(i * 6 * scale - 3 * scale, -22 * scale);
+      ctx.lineTo(i * 6 * scale + 3 * scale, -22 * scale);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } else if (skin.type === 'squirrel') {
+    ctx.fillStyle = d;
+    ctx.beginPath();
+    ctx.ellipse(24 * scale, (0 + legOffset) * scale, 12 * scale, 8 * scale, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = d;
+    ctx.beginPath();
+    ctx.arc(-10 * scale, -16 * scale, 5 * scale, 0, Math.PI * 2);
+    ctx.arc(10 * scale, -16 * scale, 5 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (skin.type === 'bat') {
+    const wingUp = frame === 0 ? -10 : 10;
+    ctx.fillStyle = d;
+    ctx.beginPath();
+    ctx.moveTo(-10 * scale, 0);
+    ctx.lineTo(-30 * scale, (-15 + wingUp) * scale);
+    ctx.lineTo(-18 * scale, 5 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(10 * scale, 0);
+    ctx.lineTo(30 * scale, (-15 - wingUp) * scale);
+    ctx.lineTo(18 * scale, 5 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = d;
+    ctx.beginPath();
+    ctx.moveTo(-8 * scale, -16 * scale);
+    ctx.lineTo(-12 * scale, -24 * scale);
+    ctx.lineTo(-4 * scale, -18 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(8 * scale, -16 * scale);
+    ctx.lineTo(12 * scale, -24 * scale);
+    ctx.lineTo(4 * scale, -18 * scale);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawFrog() {
+  const scale = Math.min(W() / 400, H() / 600);
+  animTimer++;
+  if (animTimer > 6) { wingFrame = (wingFrame + 1) % 2; animTimer = 0; }
+  const skin = SKINS.find(s => s.id === currentSkin) || SKINS[0];
+  drawAnimal(skin, frog.x + frog.w / 2, frog.y + frog.h / 2, scale, wingFrame);
+}
+
+function drawPipes() {
+  const scale = Math.min(W() / 400, H() / 600);
+  for (const p of pipes) {
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(p.x, 0, p.w, p.top);
+    ctx.fillStyle = '#A0522D';
+    ctx.fillRect(p.x - 5 * scale, p.top - 20 * scale, p.w + 10 * scale, 20 * scale);
+    const bottomY = p.top + p.gap;
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(p.x, bottomY, p.w, H() - GROUND() - bottomY);
+    ctx.fillStyle = '#A0522D';
+    ctx.fillRect(p.x - 5 * scale, bottomY, p.w + 10 * scale, 20 * scale);
+  }
+}
+
+function drawGround() {
+  const scale = Math.min(W() / 400, H() / 600);
+  ctx.fillStyle = '#5D4037';
+  ctx.fillRect(0, H() - GROUND(), W(), GROUND());
+  ctx.fillStyle = '#6D4C41';
+  for (let i = 0; i < W(); i += 40 * scale) {
+    ctx.fillRect(i, H() - GROUND(), 20 * scale, 8 * scale);
+  }
+}
+
+function drawButton(x, y, w, h, text, scale, color) {
+  ctx.fillStyle = color || 'rgba(0,0,0,0.6)';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2 * scale;
+  ctx.strokeRect(x, y, w, h);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(18 * scale) + 'px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + w / 2, y + h / 2);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function drawHUD() {
+  const scale = Math.min(W() / 400, H() / 600);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(36 * scale) + 'px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(score.toString(), W() / 2, 60 * scale);
+
+  ctx.textAlign = 'left';
+  ctx.font = 'bold ' + Math.floor(24 * scale) + 'px Arial, sans-serif';
+  ctx.fillStyle = '#FFD700';
+  ctx.fillText('Монеты: ' + coins, 20 * scale, 40 * scale);
+}
+
+function drawMenu() {
+  const scale = Math.min(W() / 400, H() / 600);
+  const grad = ctx.createLinearGradient(0, 0, 0, H());
+  grad.addColorStop(0, '#87CEEB');
+  grad.addColorStop(1, '#B0E0E6');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W(), H());
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(32 * scale) + 'px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Летающая лягушка', W() / 2, H() * 0.2);
+
+  const skin = SKINS.find(s => s.id === currentSkin) || SKINS[0];
+  animTimer++;
+  if (animTimer > 6) { wingFrame = (wingFrame + 1) % 2; animTimer = 0; }
+  drawAnimal(skin, W() / 2, H() * 0.38, scale * 1.5, wingFrame);
+
+  const btnW = 200 * scale;
+  const btnH = 50 * scale;
+  const btnX = W() / 2 - btnW / 2;
+
+  drawButton(btnX, H() * 0.55, btnW, btnH, 'Начать игру', scale, 'rgba(76,175,80,0.8)');
+  drawButton(btnX, H() * 0.65, btnW, btnH, 'Магазин', scale, 'rgba(255,152,0,0.8)');
+  drawButton(btnX, H() * 0.75, btnW, btnH, 'Мои скины', scale, 'rgba(33,150,243,0.8)');
+
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold ' + Math.floor(20 * scale) + 'px Arial, sans-serif';
+  ctx.fillText('Монеты: ' + coins, W() / 2, H() * 0.88);
+}
+
+let shopMessage = '';
+let shopMessageTimer = 0;
+
+function drawShop() {
+  const scale = Math.min(W() / 400, H() / 600);
+  ctx.fillStyle = 'rgba(30,30,30,0.95)';
+  ctx.fillRect(0, 0, W(), H());
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(28 * scale) + 'px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Магазин скинов', W() / 2, 50 * scale);
+
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold ' + Math.floor(22 * scale) + 'px Arial, sans-serif';
+  ctx.fillText('Монеты: ' + coins, W() / 2, 90 * scale);
+
+  const cols = 2;
+  const cellW = W() / (cols + 1);
+  const cellH = 110 * scale;
+  const startY = 130 * scale;
+
+  SKINS.forEach((skin, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = cellW * (col + 1) - cellW / 2;
+    const y = startY + row * cellH;
+
+    const owned = ownedSkins.includes(skin.id);
+    ctx.fillStyle = owned ? 'rgba(76,175,80,0.3)' : 'rgba(255,255,255,0.1)';
+    ctx.fillRect(x - 70 * scale, y - 40 * scale, 140 * scale, 90 * scale);
+    ctx.strokeStyle = owned ? '#4CAF50' : 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2 * scale;
+    ctx.strokeRect(x - 70 * scale, y - 40 * scale, 140 * scale, 90 * scale);
+
+    drawAnimal(skin, x, y - 5 * scale, scale * 0.6, wingFrame);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.floor(14 * scale) + 'px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(skin.name, x, y + 35 * scale);
+
+    if (owned) {
+      ctx.fillStyle = '#4CAF50';
+      ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
+      ctx.fillText('Куплено', x, y + 50 * scale);
+    } else {
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
+      ctx.fillText(skin.price + ' монет', x, y + 50 * scale);
+    }
+  });
+
+  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, 'Назад', scale);
+
+  if (shopMessageTimer > 0) {
+    shopMessageTimer--;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold ' + Math.floor(18 * scale) + 'px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(shopMessage, W() / 2, H() - 80 * scale);
+  }
+}
+
+function drawMySkins() {
+  const scale = Math.min(W() / 400, H() / 600);
+  ctx.fillStyle = 'rgba(30,30,30,0.95)';
+  ctx.fillRect(0, 0, W(), H());
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(28 * scale) + 'px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Мои скины', W() / 2, 50 * scale);
+
+  const cols = 2;
+  const cellW = W() / (cols + 1);
+  const cellH = 110 * scale;
+  const startY = 110 * scale;
+  const mySkins = SKINS.filter(s => ownedSkins.includes(s.id));
+
+  mySkins.forEach((skin, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = cellW * (col + 1) - cellW / 2;
+    const y = startY + row * cellH;
+
+    const isCurrent = skin.id === currentSkin;
+    ctx.fillStyle = isCurrent ? 'rgba(76,175,80,0.4)' : 'rgba(255,255,255,0.1)';
+    ctx.fillRect(x - 70 * scale, y - 40 * scale, 140 * scale, 90 * scale);
+    ctx.strokeStyle = isCurrent ? '#4CAF50' : 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2 * scale;
+    ctx.strokeRect(x - 70 * scale, y - 40 * scale, 140 * scale, 90 * scale);
+
+    drawAnimal(skin, x, y - 5 * scale, scale * 0.6, wingFrame);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.floor(14 * scale) + 'px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(skin.name, x, y + 35 * scale);
+
+    if (isCurrent) {
+      ctx.fillStyle = '#4CAF50';
+      ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
+      ctx.fillText('Выбран', x, y + 50 * scale);
+    } else {
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
+      ctx.fillText('Нажми', x, y + 50 * scale);
+    }
+  });
+
+  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, 'Назад', scale);
+}
+
+function drawGameOver() {
+  const scale = Math.min(W() / 400, H() / 600);
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W(), H());
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.floor(32 * scale) + 'px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Игра окончена', W() / 2, H() / 2 - 80 * scale);
+  ctx.font = Math.floor(24 * scale) + 'px Arial, sans-serif';
+  ctx.fillText('Счет: ' + score, W() / 2, H() / 2 - 30 * scale);
+  ctx.fillStyle = '#FFD700';
+  ctx.fillText('Максимум: ' + maxScore, W() / 2, H() / 2 + 10 * scale);
+  drawButton(W() / 2 - 100 * scale, H() / 2 + 50 * scale, 200 * scale, 50 * scale, 'Играть снова', scale, 'rgba(76,175,80,0.8)');
+  drawButton(W() / 2 - 100 * scale, H() / 2 + 110 * scale, 200 * scale, 50 * scale, 'В меню', scale, 'rgba(255,152,0,0.8)');
+}
+
+function update() {
+  if (screen !== 'game') return;
+  if (!started || gameOver) return;
+
+  const scale = Math.min(W() / 400, H() / 600);
+  frog.vy += frog.gravity;
+  frog.y += frog.vy;
+
+  if (frog.y < 0) { frog.y = 0; frog.vy = 0; }
+  if (frog.y + frog.h > H() - GROUND()) {
+    gameOver = true;
+    if (score > maxScore) { maxScore = score; save(); }
+  }
+
+  pipeTimer++;
+  if (pipeTimer > 100) { spawnPipe(); pipeTimer = 0; }
+
+  const speed = 3 * scale;
+  for (const p of pipes) p.x -= speed;
+  pipes = pipes.filter(p => p.x + p.w > -20);
+
+  for (const p of pipes) {
+    if (frog.x < p.x + p.w && frog.x + frog.w > p.x) {
+      if (frog.y < p.top || frog.y + frog.h > p.top + p.gap) {
+        gameOver = true;
+        if (score > maxScore) { maxScore = score; save(); }
+      }
+    }
+    if (!p.passed && p.x + p.w < frog.x) {
+      p.passed = true;
+      score++;
+      if (score % 5 === 0) { coins++; save(); }
+    }
+  }
+}
+
+function draw() {
+  if (screen === 'game') {
+    const grad = ctx.createLinearGradient(0, 0, 0, H());
+    grad.addColorStop(0, '#87CEEB');
+    grad.addColorStop(1, '#B0E0E6');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W(), H());
+
+    drawPipes();
+    drawGround();
+    drawFrog();
+    drawHUD();
+
+    if (gameOver) drawGameOver();
+  } else if (screen === 'menu') {
+    drawMenu();
+  } else if (screen === 'shop') {
+    drawShop();
+  } else if (screen === 'myskins') {
+    drawMySkins();
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function getClickPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  let clientX, clientY;
+  if (e.touches) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+function isInside(x, y, bx, by, bw, bh) {
+  return x > bx && x < bx + bw && y > by && y < by + bh;
+}
+
+function handleClick(x, y) {
+  const scale = Math.min(W() / 400, H() / 600);
+
+  if (screen === 'menu') {
+    const btnW = 200 * scale;
+    const btnH = 50 * scale;
+    const btnX = W() / 2 - btnW / 2;
+
+    if (isInside(x, y, btnX, H() * 0.55, btnW, btnH)) {
+      reset();
+      screen = 'game';
+      return;
+    }
+    if (isInside(x, y, btnX, H() * 0.65, btnW, btnH)) {
+      screen = 'shop';
+      return;
+    }
+    if (isInside(x, y, btnX, H() * 0.75, btnW, btnH)) {
+      screen = 'myskins';
+      return;
+    }
+  } else if (screen === 'game') {
+    if (gameOver) {
+      const btnW = 200 * scale;
+      const btnH = 50 * scale;
+      const btnX = W() / 2 - btnW / 2;
+      if (isInside(x, y, btnX, H() / 2 + 50 * scale, btnW, btnH)) {
+        reset();
+        started = true;
+        return;
+      }
+      if (isInside(x, y, btnX, H() / 2 + 110 * scale, btnW, btnH)) {
+        screen = 'menu';
+        return;
+      }
+      return;
+    }
+    if (!started) { started = true; return; }
+    frog.vy = frog.jump;
+  } else if (screen === 'shop') {
+    if (isInside(x, y, W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale)) {
+      screen = 'menu';
+      return;
+    }
+    const cols = 2;
+    const cellW = W() / (cols + 1);
+    const cellH = 110 * scale;
+    const startY = 130 * scale;
+
+    SKINS.forEach((skin, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cx = cellW * (col + 1) - cellW / 2;
+      const cy = startY + row * cellH;
+      if (isInside(x, y, cx - 70 * scale, cy - 40 * scale, 140 * scale, 90 * scale)) {
+        if (ownedSkins.includes(skin.id)) {
+          shopMessage = 'Уже куплено';
+          shopMessageTimer = 60;
+          return;
+        }
+        if (coins >= skin.price) {
+          coins -= skin.price;
+          ownedSkins.push(skin.id);
+          shopMessage = 'Куплено: ' + skin.name;
+          shopMessageTimer = 60;
+          save();
+        } else {
+          shopMessage = 'Не хватает монет';
+          shopMessageTimer = 60;
+        }
+      }
+    });
+  } else if (screen === 'myskins') {
+    if (isInside(x, y, W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale)) {
+      screen = 'menu';
+      return;
+    }
+    const cols = 2;
+    const cellW = W() / (cols + 1);
+    const cellH = 110 * scale;
+    const startY = 110 * scale;
+    const mySkins = SKINS.filter(s => ownedSkins.includes(s.id));
+
+    mySkins.forEach((skin, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cx = cellW * (col + 1) - cellW / 2;
+      const cy = startY + row * cellH;
+      if (isInside(x, y, cx - 70 * scale, cy - 40 * scale, 140 * scale, 90 * scale)) {
+        currentSkin = skin.id;
+        save();
+      }
+    });
+  }
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = getClickPos(e);
+  handleClick(pos.x, pos.y);
+});
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const pos = getClickPos(e);
+  handleClick(pos.x, pos.y);
+}, { passive: false });
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && screen === 'game' && !gameOver) {
+    e.preventDefault();
+    if (!started) { started = true; return; }
+    frog.vy = frog.jump;
+  }
+});
+
+initSizes();
+loop();
+</script>
+</body>
+</html>

@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="windows-1251">
-<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Летающая лягушка</title>
+<title>&#1051;&#1077;&#1090;&#1072;&#1102;&#1097;&#1072;&#1103; &#1083;&#1103;&#1075;&#1091;&#1096;&#1082;&#1072;</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -36,52 +35,71 @@ resize();
 const W = () => canvas.width;
 const H = () => canvas.height;
 
-// 20 ФОНОВ
+const TEXT = {
+  coin: '\u041C\u043E\u043D\u0435\u0442\u044B: ', // РњРѕРЅРµС‚С‹
+  start: '\u041D\u0430\u0447\u0430\u0442\u044C \u0438\u0433\u0440\u0443', // РќР°С‡Р°С‚СЊ РёРіСЂСѓ
+  shop: '\u041C\u0430\u0433\u0430\u0437\u0438\u043D \u0441\u043A\u0438\u043D\u043E\u0432', // РњР°РіР°Р·РёРЅ СЃРєРёРЅРѕРІ
+  mySkins: '\u041C\u043E\u0438 \u0441\u043A\u0438\u043D\u044B', // РњРѕРё СЃРєРёРЅС‹
+  bgMenu: '\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0444\u043E\u043D', // Р’С‹Р±СЂР°С‚СЊ С„РѕРЅ
+  back: '\u041D\u0430\u0437\u0430\u0434', // РќР°Р·Р°Рґ
+  gameOver: '\u0418\u0433\u0440\u0430 \u043E\u043A\u043E\u043D\u0447\u0435\u043D\u0430', // РРіСЂР° РѕРєРѕРЅС‡РµРЅР°
+  score: '\u0421\u0447\u0435\u0442: ', // РЎС‡РµС‚
+  max: '\u041C\u0430\u043A\u0441\u0438\u043C\u0443\u043C: ', // РњР°РєСЃРёРјСѓРј
+  playAgain: '\u0418\u0433\u0440\u0430\u0442\u044C \u0441\u043D\u043E\u0432\u0430', // РРіСЂР°С‚СЊ СЃРЅРѕРІР°
+  toMenu: '\u0412 \u043C\u0435\u043D\u044E', // Р’ РјРµРЅСЋ
+  bought: '\u041A\u0443\u043F\u043B\u0435\u043D\u043E', // РљСѓРїР»РµРЅРѕ
+  select: '\u041D\u0430\u0436\u043C\u0438', // РќР°Р¶РјРё
+  selected: '\u0412\u044B\u0431\u0440\u0430\u043D', // Р’С‹Р±СЂР°РЅ
+  need: '\u041D\u0443\u0436\u043D\u043E ', // РќСѓР¶РЅРѕ
+  coinsWord: ' \u043C\u043E\u043D\u0435\u0442', // РјРѕРЅРµС‚
+  already: '\u0423\u0436\u0435 \u043A\u0443\u043F\u043B\u0435\u043D\u043E', // РЈР¶Рµ РєСѓРїР»РµРЅРѕ
+  noCoins: '\u041D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u043C\u043E\u043D\u0435\u0442', // РќРµ С…РІР°С‚Р°РµС‚ РјРѕРЅРµС‚
+  buy: '\u041A\u0443\u043F\u043B\u0435\u043D\u043E: ', // РљСѓРїР»РµРЅРѕ: 
+  rec: '\u0420\u0435\u043A\u043E\u0440\u0434: ', // Р РµРєРѕСЂРґ
+  title: '\u041B\u0435\u0442\u0430\u044E\u0449\u0430\u044F \u043B\u044F\u0433\u0443\u0448\u043A\u0430' // Р›РµС‚Р°СЋС‰Р°СЏ Р»СЏРіСѓС€РєР°
+};
+
 const BACKGROUNDS = [
-  { id: 0, name: 'Небо', price: 0, color1: '#87CEEB', color2: '#B0E0E6' },
-  { id: 1, name: 'Закат', price: 3, color1: '#FF7E5F', color2: '#FEB47B' },
-  { id: 2, name: 'Ночь', price: 5, color1: '#141E30', color2: '#243B55' },
-  { id: 3, name: 'Лес', price: 7, color1: '#134E5E', color2: '#71B280' },
-  { id: 4, name: 'Пустыня', price: 10, color1: '#D1913C', color2: '#FFD194' },
-  { id: 5, name: 'Космос', price: 12, color1: '#000000', color2: '#434343' },
-  { id: 6, name: 'Роза', price: 15, color1: '#FF416C', color2: '#FF4B2B' },
-  { id: 7, name: 'Океан', price: 18, color1: '#2193b0', color2: '#6dd5ed' },
-  { id: 8, name: 'Изумруд', price: 20, color1: '#11998e', color2: '#38ef7d' },
-  { id: 9, name: 'Гроза', price: 22, color1: '#2c3e50', color2: '#bdc3c7' },
-  { id: 10, name: 'Лаванда', price: 25, color1: '#8E2DE2', color2: '#4A00E0' },
-  { id: 11, name: 'Зима', price: 28, color1: '#E0EAFC', color2: '#CFDEF3' },
-  { id: 12, name: 'Огонь', price: 30, color1: '#f12711', color2: '#f5af19' },
-  { id: 13, name: 'Кислота', price: 32, color1: '#7F00FF', color2: '#E100FF' },
-  { id: 14, name: 'Токсик', price: 35, color1: '#00FF00', color2: '#003300' },
-  { id: 15, name: 'Кровь', price: 38, color1: '#870000', color2: '#190A05' },
-  { id: 16, name: 'Глубина', price: 40, color1: '#000046', color2: '#1CB5E0' },
-  { id: 17, name: 'Пыль', price: 45, color1: '#606c88', color2: '#3f4c6b' },
-  { id: 18, name: 'Вулкан', price: 20, color1: '#ff4b1f', color2: '#ff9068', volcano: true }, // ВУЛКАН
-  { id: 19, name: 'Хаос', price: 50, color1: '#000000', color2: '#ff0000' }
+  { id: 0, name: '\u041D\u0435\u0431\u043E', price: 0, color1: '#87CEEB', color2: '#B0E0E6' },
+  { id: 1, name: '\u0417\u0430\u043A\u0430\u0442', price: 3, color1: '#FF7E5F', color2: '#FEB47B' },
+  { id: 2, name: '\u041D\u043E\u0447\u044C', price: 5, color1: '#141E30', color2: '#243B55' },
+  { id: 3, name: '\u041B\u0435\u0441', price: 7, color1: '#134E5E', color2: '#71B280' },
+  { id: 4, name: '\u041F\u0443\u0441\u0442\u044B\u043D\u044F', price: 10, color1: '#D1913C', color2: '#FFD194' },
+  { id: 5, name: '\u041A\u043E\u0441\u043C\u043E\u0441', price: 12, color1: '#000000', color2: '#434343' },
+  { id: 6, name: '\u0420\u043E\u0437\u0430', price: 15, color1: '#FF416C', color2: '#FF4B2B' },
+  { id: 7, name: '\u041E\u043A\u0435\u0430\u043D', price: 18, color1: '#2193b0', color2: '#6dd5ed' },
+  { id: 8, name: '\u0418\u0437\u0443\u043C\u0440\u0443\u0434', price: 20, color1: '#11998e', color2: '#38ef7d' },
+  { id: 9, name: '\u0413\u0440\u043E\u0437\u0430', price: 22, color1: '#2c3e50', color2: '#bdc3c7' },
+  { id: 10, name: '\u041B\u0430\u0432\u0430\u043D\u0434\u0430', price: 25, color1: '#8E2DE2', color2: '#4A00E0' },
+  { id: 11, name: '\u0417\u0438\u043C\u0430', price: 28, color1: '#E0EAFC', color2: '#CFDEF3' },
+  { id: 12, name: '\u041E\u0433\u043E\u043D\u044C', price: 30, color1: '#f12711', color2: '#f5af19' },
+  { id: 13, name: '\u041A\u0438\u0441\u043B\u043E\u0442\u0430', price: 32, color1: '#7F00FF', color2: '#E100FF' },
+  { id: 14, name: '\u0422\u043E\u043A\u0441\u0438\u043A', price: 35, color1: '#00FF00', color2: '#003300' },
+  { id: 15, name: '\u041A\u0440\u043E\u0432\u044C', price: 38, color1: '#870000', color2: '#190A05' },
+  { id: 16, name: '\u0413\u043B\u0443\u0431\u0438\u043D\u0430', price: 40, color1: '#000046', color2: '#1CB5E0' },
+  { id: 17, name: '\u041F\u044B\u043B\u044C', price: 45, color1: '#606c88', color2: '#3f4c6b' },
+  { id: 18, name: '\u0412\u0443\u043B\u043A\u0430\u043D', price: 20, color1: '#ff4b1f', color2: '#ff9068', volcano: true },
+  { id: 19, name: '\u0425\u0430\u043E\u0441', price: 50, color1: '#000000', color2: '#ff0000' }
 ];
 
 const SKINS = [
-  { id: 'frog', name: 'Лягушка', price: 0, color: '#4CAF50', dark: '#2E7D32', type: 'frog' },
-  { id: 'bird', name: 'Птичка', price: 3, color: '#FFC107', dark: '#FF9800', type: 'bird' },
-  { id: 'eagle', name: 'Орел', price: 8, color: '#8D6E63', dark: '#5D4037', type: 'eagle' },
-  { id: 'woodpecker', name: 'Дятел', price: 6, color: '#F44336', dark: '#B71C1C', type: 'woodpecker' },
-  { id: 'mouse', name: 'Мышка', price: 5, color: '#9E9E9E', dark: '#616161', type: 'mouse' },
-  { id: 'hedgehog', name: 'Ежик', price: 7, color: '#795548', dark: '#4E342E', type: 'hedgehog' },
-  { id: 'squirrel', name: 'Белка', price: 10, color: '#FF7043', dark: '#D84315', type: 'squirrel' },
-  { id: 'bat', name: 'Мышь летучая', price: 15, color: '#424242', dark: '#212121', type: 'bat' }
+  { id: 'frog', name: '\u041B\u044F\u0433\u0443\u0448\u043A\u0430', price: 0, color: '#4CAF50', dark: '#2E7D32', type: 'frog' },
+  { id: 'bird', name: '\u041F\u0442\u0438\u0447\u043A\u0430', price: 3, color: '#FFC107', dark: '#FF9800', type: 'bird' },
+  { id: 'eagle', name: '\u041E\u0440\u0435\u043B', price: 8, color: '#8D6E63', dark: '#5D4037', type: 'eagle' },
+  { id: 'woodpecker', name: '\u0414\u044F\u0442\u0435\u043B', price: 6, color: '#F44336', dark: '#B71C1C', type: 'woodpecker' },
+  { id: 'mouse', name: '\u041C\u044B\u0448\u043A\u0430', price: 5, color: '#9E9E9E', dark: '#616161', type: 'mouse' },
+  { id: 'hedgehog', name: '\u0415\u0436\u0438\u043A', price: 7, color: '#795548', dark: '#4E342E', type: 'hedgehog' },
+  { id: 'squirrel', name: '\u0411\u0435\u043B\u043A\u0430', price: 10, color: '#FF7043', dark: '#D84315', type: 'squirrel' },
+  { id: 'bat', name: '\u041C\u044B\u0448\u044C \u043B\u0435\u0442\u0443\u0447\u0430\u044F', price: 15, color: '#424242', dark: '#212121', type: 'bat' }
 ];
 
 let coins = parseInt(localStorage.getItem('frog_coins') || '0');
 let maxScore = parseInt(localStorage.getItem('frog_maxScore') || '0');
 let ownedSkins = JSON.parse(localStorage.getItem('frog_owned') || '["frog"]');
 let currentSkin = localStorage.getItem('frog_current') || 'frog';
-
-// ФОНЫ (всегда открыт первый)
 let currentBg = parseInt(localStorage.getItem('frog_bg') || '0');
-// Фон открывается, если твой maxScore >= цены фона
-function isBgUnlocked(bg) {
-  return maxScore >= bg.price;
-}
+
+function isBgUnlocked(bg) { return maxScore >= bg.price; }
 
 function save() {
   localStorage.setItem('frog_coins', coins);
@@ -291,7 +309,6 @@ function drawGround() {
   }
 }
 
-// РИСОВАНИЕ ФОНА (включая вулкан)
 function drawBackground() {
   const bg = BACKGROUNDS.find(b => b.id === currentBg) || BACKGROUNDS[0];
   const grad = ctx.createLinearGradient(0, 0, 0, H());
@@ -300,18 +317,14 @@ function drawBackground() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W(), H());
 
-  // Если это вулкан (id 18)
   if (bg.volcano) {
     volcanoTimer += 0.05;
-    // Рисуем гору
     ctx.fillStyle = '#3E2723';
     ctx.beginPath();
     ctx.moveTo(-50, H() - GROUND());
     ctx.lineTo(W() / 2, H() * 0.3);
     ctx.lineTo(W() + 50, H() - GROUND());
     ctx.fill();
-    
-    // Лава
     ctx.fillStyle = '#FF5722';
     ctx.beginPath();
     ctx.moveTo(W() / 2 - 20, H() * 0.3);
@@ -319,8 +332,6 @@ function drawBackground() {
     ctx.lineTo(W() / 2 + 40, H() - GROUND());
     ctx.lineTo(W() / 2 - 40, H() - GROUND());
     ctx.fill();
-
-    // Извержение (частицы)
     ctx.fillStyle = '#FFC107';
     for (let i = 0; i < 15; i++) {
       let px = W() / 2 + Math.sin(volcanoTimer + i) * (50 + i * 5);
@@ -356,7 +367,7 @@ function drawHUD() {
   ctx.textAlign = 'left';
   ctx.font = 'bold ' + Math.floor(24 * scale) + 'px Arial, sans-serif';
   ctx.fillStyle = '#FFD700';
-  ctx.fillText('Монеты: ' + coins, 20 * scale, 40 * scale);
+  ctx.fillText(TEXT.coin + coins, 20 * scale, 40 * scale);
 }
 
 function drawMenu() {
@@ -366,7 +377,7 @@ function drawMenu() {
   ctx.fillStyle = '#fff';
   ctx.font = 'bold ' + Math.floor(32 * scale) + 'px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Летающая лягушка', W() / 2, H() * 0.15);
+  ctx.fillText(TEXT.title, W() / 2, H() * 0.15);
 
   const skin = SKINS.find(s => s.id === currentSkin) || SKINS[0];
   animTimer++;
@@ -377,14 +388,14 @@ function drawMenu() {
   const btnH = 40 * scale;
   const btnX = W() / 2 - btnW / 2;
 
-  drawButton(btnX, H() * 0.48, btnW, btnH, 'Начать игру', scale, 'rgba(76,175,80,0.9)');
-  drawButton(btnX, H() * 0.57, btnW, btnH, 'Магазин скинов', scale, 'rgba(255,152,0,0.9)');
-  drawButton(btnX, H() * 0.66, btnW, btnH, 'Мои скины', scale, 'rgba(33,150,243,0.9)');
-  drawButton(btnX, H() * 0.75, btnW, btnH, 'Выбрать фон', scale, 'rgba(156,39,176,0.9)');
+  drawButton(btnX, H() * 0.48, btnW, btnH, TEXT.start, scale, 'rgba(76,175,80,0.9)');
+  drawButton(btnX, H() * 0.57, btnW, btnH, TEXT.shop, scale, 'rgba(255,152,0,0.9)');
+  drawButton(btnX, H() * 0.66, btnW, btnH, TEXT.mySkins, scale, 'rgba(33,150,243,0.9)');
+  drawButton(btnX, H() * 0.75, btnW, btnH, TEXT.bgMenu, scale, 'rgba(156,39,176,0.9)');
 
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold ' + Math.floor(20 * scale) + 'px Arial, sans-serif';
-  ctx.fillText('Монеты: ' + coins + '  |  Рекорд: ' + maxScore, W() / 2, H() * 0.88);
+  ctx.fillText(TEXT.coin + coins + '  |  ' + TEXT.rec + maxScore, W() / 2, H() * 0.88);
 }
 
 let shopMessage = '';
@@ -398,7 +409,7 @@ function drawShop() {
   ctx.fillStyle = '#fff';
   ctx.font = 'bold ' + Math.floor(28 * scale) + 'px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Магазин скинов', W() / 2, 50 * scale);
+  ctx.fillText(TEXT.shop, W() / 2, 50 * scale);
 
   const cols = 2;
   const cellW = W() / (cols + 1);
@@ -428,15 +439,15 @@ function drawShop() {
     if (owned) {
       ctx.fillStyle = '#4CAF50';
       ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
-      ctx.fillText('Куплено', x, y + 50 * scale);
+      ctx.fillText(TEXT.bought, x, y + 50 * scale);
     } else {
       ctx.fillStyle = '#FFD700';
       ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
-      ctx.fillText(skin.price + ' монет', x, y + 50 * scale);
+      ctx.fillText(skin.price + TEXT.coinsWord, x, y + 50 * scale);
     }
   });
 
-  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, 'Назад', scale);
+  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, TEXT.back, scale);
   if (shopMessageTimer > 0) {
     shopMessageTimer--;
     ctx.fillStyle = '#FFD700';
@@ -454,7 +465,7 @@ function drawMySkins() {
   ctx.fillStyle = '#fff';
   ctx.font = 'bold ' + Math.floor(28 * scale) + 'px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Мои скины', W() / 2, 50 * scale);
+  ctx.fillText(TEXT.mySkins, W() / 2, 50 * scale);
 
   const cols = 2;
   const cellW = W() / (cols + 1);
@@ -485,18 +496,17 @@ function drawMySkins() {
     if (isCurrent) {
       ctx.fillStyle = '#4CAF50';
       ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
-      ctx.fillText('Выбран', x, y + 50 * scale);
+      ctx.fillText(TEXT.selected, x, y + 50 * scale);
     } else {
       ctx.fillStyle = '#FFD700';
       ctx.font = 'bold ' + Math.floor(13 * scale) + 'px Arial, sans-serif';
-      ctx.fillText('Нажми', x, y + 50 * scale);
+      ctx.fillText(TEXT.select, x, y + 50 * scale);
     }
   });
 
-  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, 'Назад', scale);
+  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, TEXT.back, scale);
 }
 
-// МЕНЮ ФОНОВ
 function drawBackgroundsMenu() {
   const scale = Math.min(W() / 400, H() / 600);
   ctx.fillStyle = 'rgba(30,30,30,0.95)';
@@ -505,11 +515,11 @@ function drawBackgroundsMenu() {
   ctx.fillStyle = '#fff';
   ctx.font = 'bold ' + Math.floor(24 * scale) + 'px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Выбор фона', W() / 2, 40 * scale);
+  ctx.fillText(TEXT.bgMenu, W() / 2, 40 * scale);
   
   ctx.font = Math.floor(16 * scale) + 'px Arial, sans-serif';
   ctx.fillStyle = '#FFD700';
-  ctx.fillText('Рекорд: ' + maxScore, W() / 2, 70 * scale);
+  ctx.fillText(TEXT.rec + maxScore, W() / 2, 70 * scale);
 
   const cols = 3;
   const cellW = W() / cols;
@@ -525,7 +535,6 @@ function drawBackgroundsMenu() {
     const unlocked = isBgUnlocked(bg);
     const isCurrent = currentBg === bg.id;
 
-    // Квадрат фона
     const grad = ctx.createLinearGradient(x - 40 * scale, y - 30 * scale, x + 40 * scale, y + 30 * scale);
     grad.addColorStop(0, bg.color1);
     grad.addColorStop(1, bg.color2);
@@ -542,11 +551,11 @@ function drawBackgroundsMenu() {
       ctx.fillText(bg.name, x, y + 45 * scale);
     } else {
       ctx.fillStyle = '#f44336';
-      ctx.fillText('Нужно ' + bg.price, x, y + 45 * scale);
+      ctx.fillText(TEXT.need + bg.price, x, y + 45 * scale);
     }
   });
 
-  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, 'Назад', scale);
+  drawButton(W() / 2 - 80 * scale, H() - 60 * scale, 160 * scale, 40 * scale, TEXT.back, scale);
 }
 
 function drawGameOver() {
@@ -556,13 +565,13 @@ function drawGameOver() {
   ctx.fillStyle = '#fff';
   ctx.font = 'bold ' + Math.floor(32 * scale) + 'px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Игра окончена', W() / 2, H() / 2 - 80 * scale);
+  ctx.fillText(TEXT.gameOver, W() / 2, H() / 2 - 80 * scale);
   ctx.font = Math.floor(24 * scale) + 'px Arial, sans-serif';
-  ctx.fillText('Счет: ' + score, W() / 2, H() / 2 - 30 * scale);
+  ctx.fillText(TEXT.score + score, W() / 2, H() / 2 - 30 * scale);
   ctx.fillStyle = '#FFD700';
-  ctx.fillText('Максимум: ' + maxScore, W() / 2, H() / 2 + 10 * scale);
-  drawButton(W() / 2 - 100 * scale, H() / 2 + 50 * scale, 200 * scale, 50 * scale, 'Играть снова', scale, 'rgba(76,175,80,0.8)');
-  drawButton(W() / 2 - 100 * scale, H() / 2 + 110 * scale, 200 * scale, 50 * scale, 'В меню', scale, 'rgba(255,152,0,0.8)');
+  ctx.fillText(TEXT.max + maxScore, W() / 2, H() / 2 + 10 * scale);
+  drawButton(W() / 2 - 100 * scale, H() / 2 + 50 * scale, 200 * scale, 50 * scale, TEXT.playAgain, scale, 'rgba(76,175,80,0.8)');
+  drawButton(W() / 2 - 100 * scale, H() / 2 + 110 * scale, 200 * scale, 50 * scale, TEXT.toMenu, scale, 'rgba(255,152,0,0.8)');
 }
 
 function update() {
@@ -597,7 +606,7 @@ function update() {
       p.passed = true;
       score++;
       if (score % 5 === 0) { coins++; save(); }
-      if (score > maxScore) { maxScore = score; save(); } // Сохраняем рекорд на лету
+      if (score > maxScore) { maxScore = score; save(); }
     }
   }
 }
@@ -682,10 +691,10 @@ function handleClick(x, y) {
       const cx = cellW * (col + 1) - cellW / 2;
       const cy = startY + row * cellH;
       if (isInside(x, y, cx - 70 * scale, cy - 40 * scale, 140 * scale, 90 * scale)) {
-        if (ownedSkins.includes(skin.id)) { shopMessage = 'Уже куплено'; shopMessageTimer = 60; return; }
+        if (ownedSkins.includes(skin.id)) { shopMessage = TEXT.already; shopMessageTimer = 60; return; }
         if (coins >= skin.price) {
-          coins -= skin.price; ownedSkins.push(skin.id); shopMessage = 'Куплено: ' + skin.name; shopMessageTimer = 60; save();
-        } else { shopMessage = 'Не хватает монет'; shopMessageTimer = 60; }
+          coins -= skin.price; ownedSkins.push(skin.id); shopMessage = TEXT.buy + skin.name; shopMessageTimer = 60; save();
+        } else { shopMessage = TEXT.noCoins; shopMessageTimer = 60; }
       }
     });
   } else if (screen === 'myskins') {
